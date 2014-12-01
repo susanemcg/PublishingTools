@@ -2,99 +2,87 @@ import re
 import os
 import argparse
 
-# create an argument parser to take commandline arguments (e.g. target filename)
-arg_parser = argparse.ArgumentParser(description="Markdown file to be processed into Gitbook format")
-arg_parser.add_argument("filename")
 
-args = arg_parser.parse_args()
+def main():
 
+	# create an argument parser to take commandline arguments (e.g. target filename)
+	arg_parser = argparse.ArgumentParser(description="Markdown file to be processed into Gitbook format")
+	arg_parser.add_argument("filename")
 
-chapterHeading = re.compile("={5}.*")
-sectionHeading = re.compile("-{7}.*")
-
-# e.g. load the file passed in from the command line
-targetFile = args.filename
+	args = arg_parser.parse_args()
 
 
-sourceText = open(targetFile, "rU")
+	chapterHeading = re.compile("={5}.*")
+	sectionHeading = re.compile("-{7}.*")
 
-lastlineHolder = ""
+	# e.g. load the file passed in from the command line
+	targetFile = args.filename
 
-currentChapter = ""
+	# strip the file extension from the target file to create target folder
+	folderName = targetFile[:-3]
 
-textBuffer = []
+	# create a folder w/the filename to put files into
+	if not os.path.exists(folderName):
+		os.makedirs(folderName)
 
-for line in sourceText:
-	if chapterHeading.match(line) or sectionHeading.match(line):
-		print "hit delimiter"
-		print line
-		#e.g. if we've hit a chapter heading
-		if(textBuffer):
-			# this means we're not at the start of the file
+	sourceText = open(targetFile, "rU")
+
+	lastlineHolder = ""
+
+	currentChapter = ""
+
+	textBuffer = []
+
+	isFirst = True
+
+	for line in sourceText:
+
+		# if we're at a chapter or section break AND we've got something in the buffer!
+		if (chapterHeading.match(line) or sectionHeading.match(line)) and textBuffer:
 
 			# whether we've got a chapter or a section, we need to create the "title" element
-			# remove digits and punctuation from chapter/section title, make it lowercase and split it on spaces
-			titleArray = re.sub('[!@#$&.:1234567890,]', '',textBuffer[0]).lower().split()
-			# join the first four "words" of the title together with underscores
-			titleText = "_".join(titleArray[0:3])
+			titleText = formatTitle(textBuffer[0])
 
-			# now, we need to check if this is going to be a directory or not
-			if chapterHeading.match(line):
-				if sectionHeading.match(textBuffer[1]):
-					# what came before was just a section, so create another file
-					myOutput = open(currentChapter+"/"+titleText+".md", "w")
-					myOutput.writelines(textBuffer)
-					myOutput.close()
-					#empty the buffer
-					textBuffer = []					
+			# if what's in the buffer starts a chapter, create a directory UNLESS it is the first
+			if chapterHeading.match(textBuffer[1]) and not isFirst:
+				# what's in the buffer is the start of a chapter; make a folder
+				# create the directory (should update this to skip if exists)
+				if not os.path.exists(folderName+"/"+titleText):
+					os.makedirs(folderName+"/"+titleText)
+				#write the outputfile from the buffer
+				myOutput = open(folderName+"/"+titleText+"/README.md", "w")
+
+				#set currentChapter to titleText, so we know where to place sections (if they exist)
+				currentChapter = titleText
+			else:
+				# what's in the buffer is a section, make a file
+				if isFirst:
+					myOutput = open(folderName+"/README.md", "w")
+					isFirst = False
 				else:
-					# create the directory (should update this to skip if exists)
-					if not os.path.exists(titleText):
-						os.makedirs(titleText)
-					#write the outputfile from the buffer
-					myOutput = open(titleText+"/README.md", "w")
-					myOutput.writelines(textBuffer)
-					myOutput.close()
+					myOutput = open(folderName+"/"+currentChapter+"/"+titleText+".md", "w")	
 
-					#set currentChapter to titleText, so we know where to place sections (if they exist)
-					currentChapter = titleText
-					#empty the buffer
-					textBuffer = []
-			if sectionHeading.match(line):
-				if chapterHeading.match(textBuffer[1]):
-					# e.g. if what came before was in fact a chapter heading
-					# then reset the chapter title do all the things we do if all that came before was an entire chapter
-					
-					chapterArray = re.sub('[!@#$&.:1234567890,]', '',textBuffer[0]).lower().split()
-					chapterTitle = "_".join(titleArray[0:3])
+			# whatever file we're writing to, write to it & empty the buffer				
+			myOutput.writelines(textBuffer)
+			myOutput.close()
+			#empty the buffer
+			textBuffer = []
 
-					if not os.path.exists(chapterTitle):
-						os.makedirs(chapterTitle)
-					#write the outputfile from the buffer
-					myOutput = open(chapterTitle+"/README.md", "w")
-					myOutput.writelines(textBuffer)
-					myOutput.close()
-
-					#set currentChapter to titleText, so we know where to place sections (if they exist)
-					currentChapter = chapterTitle
-					#empty the buffer
-					textBuffer = []
-				else:
-					# otherwise, what came before was just a section, so create another file
-					myOutput = open(currentChapter+"/"+titleText+".md", "w")
-					myOutput.writelines(textBuffer)
-					myOutput.close()
-					#empty the buffer
-					textBuffer = []
-
-	if(lastlineHolder):
-		textBuffer.append(lastlineHolder)
-	
-	lastlineHolder = line
+		if(lastlineHolder):
+			textBuffer.append(lastlineHolder)
+		
+		lastlineHolder = line
 
 
-sourceText.close()
+	sourceText.close()
 
 
-                             
+def formatTitle(aLine):
+	# remove digits and punctuation from chapter/section title, make it lowercase and split it on spaces
+	theTitleArray = re.sub('[!@#$&.:1234567890,]', '',aLine).lower().split()
+	# join the first four "words" of the title together with underscores
+	theTitle = "_".join(theTitleArray[0:3])
+	return theTitle   
+
+main()          
     
