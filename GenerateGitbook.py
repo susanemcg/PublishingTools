@@ -25,7 +25,13 @@ def main():
 	if not os.path.exists(folderName):
 		os.makedirs(folderName)
 
-	sourceText = open(targetFile, "rU")
+	# create summary file, which will be used by Gitbook to generate the table of contents/links
+	summaryFile = open(folderName+"/SUMMARY.md", "w")
+	summaryFile.write("# Summary\n\n")
+
+	sourceStream = open(targetFile, "rU")
+	sourceText = sourceStream.readlines()
+	num_lines = len(sourceText)
 
 	lastlineHolder = ""
 
@@ -38,13 +44,18 @@ def main():
 
 	isFirst = True
 
-	for line in sourceText:
+	for line_num, line in enumerate(sourceText):
+		#print line_num
 
-		# if we're at a chapter or section break AND we've got something in the buffer!
-		if (chapterHeading.match(line) or sectionHeading.match(line)) and textBuffer:
+		# if we're at a chapter or section break or at the end of the file AND we've got something in the buffer!
+		if (chapterHeading.match(line) or sectionHeading.match(line) or line_num == num_lines-1) and textBuffer:
 
 			# whether we've got a chapter or a section, we need to create the "title" element
 			titleText = formatTitle(textBuffer[0])
+
+			# if we are indeed at the last line of the file, we need to push it to the buffer *before* processing 
+			if line_num == num_lines-1:
+				textBuffer.append(lastlineHolder)
 
 			# if what's in the buffer starts a chapter, create a directory UNLESS it is the first
 			if chapterHeading.match(textBuffer[1]) and not isFirst:
@@ -57,6 +68,10 @@ def main():
 					os.makedirs(folderName+"/"+titleText)
 				#write the outputfile from the buffer
 				myOutput = open(folderName+"/"+titleText+"/README.md", "w")
+
+				# write this folder info to summary file; note that link is relative to position of SUMMARY file, NOT python file
+				# we use the raw title text from the buffer as the link text
+				summaryFile.write("* ["+textBuffer[0].rstrip()+"]("+titleText+"/README.md)\n")
 
 				#set currentChapter to titleText, so we know where to place sections (if they exist)
 				currentChapter = titleText
@@ -75,7 +90,11 @@ def main():
 					myOutput = open(folderName+"/README.md", "w")
 					isFirst = False
 				else:
-					myOutput = open(folderName+"/"+currentChapter+"/"+titleText+".md", "w")	
+					myOutput = open(folderName+"/"+currentChapter+"/"+titleText+".md", "w")
+
+					# add section path to summary file
+					# we use the raw title text from the buffer as the link text 
+					summaryFile.write("\t* ["+textBuffer[0].rstrip()+"]("+currentChapter+"/"+titleText+".md)\n")	
 
 				sectionCounter+=1;
 
@@ -91,7 +110,8 @@ def main():
 		lastlineHolder = line
 
 
-	sourceText.close()
+	sourceStream.close()
+	summaryFile.close()
 
 
 def formatTitle(aLine):
