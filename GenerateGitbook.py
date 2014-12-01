@@ -31,6 +31,9 @@ def main():
 
 	currentChapter = ""
 
+	chapterCounter = 1
+	sectionCounter = 1
+
 	textBuffer = []
 
 	isFirst = True
@@ -46,6 +49,9 @@ def main():
 			# if what's in the buffer starts a chapter, create a directory UNLESS it is the first
 			if chapterHeading.match(textBuffer[1]) and not isFirst:
 				# what's in the buffer is the start of a chapter; make a folder
+				# first, prepend the current chapterCounter, so we know what order the finished folders go in
+				titleText = str(chapterCounter)+"_"+titleText
+
 				# create the directory (should update this to skip if exists)
 				if not os.path.exists(folderName+"/"+titleText):
 					os.makedirs(folderName+"/"+titleText)
@@ -54,13 +60,24 @@ def main():
 
 				#set currentChapter to titleText, so we know where to place sections (if they exist)
 				currentChapter = titleText
+
+				#increment chapterCounter, reset the section counter
+				chapterCounter+=1;
+				sectionCounter = 1;
+
 			else:
 				# what's in the buffer is a section, make a file
+				# prepend the title with sectionCounter
+				titleText = str(sectionCounter)+"_"+titleText
+
+				# if this is the first chapter/section, make it the main "README" file
 				if isFirst:
 					myOutput = open(folderName+"/README.md", "w")
 					isFirst = False
 				else:
 					myOutput = open(folderName+"/"+currentChapter+"/"+titleText+".md", "w")	
+
+				sectionCounter+=1;
 
 			# whatever file we're writing to, write to it & empty the buffer				
 			myOutput.writelines(textBuffer)
