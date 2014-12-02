@@ -13,7 +13,7 @@ def main():
 
 
 	chapterHeading = re.compile("={5}.*")
-	sectionHeading = re.compile("-{7}.*")
+	sectionHeading = re.compile("-{5}.*")
 
 	# e.g. load the file passed in from the command line
 	targetFile = args.filename
@@ -61,7 +61,7 @@ def main():
 			if chapterHeading.match(textBuffer[1]) and not isFirst:
 				# what's in the buffer is the start of a chapter; make a folder
 				# first, prepend the current chapterCounter, so we know what order the finished folders go in
-				titleText = str(chapterCounter)+"_"+titleText
+				#titleText = str(chapterCounter)+"_"+titleText
 
 				# create the directory (should update this to skip if exists)
 				if not os.path.exists(folderName+"/"+titleText):
@@ -83,7 +83,7 @@ def main():
 			else:
 				# what's in the buffer is a section, make a file
 				# prepend the title with sectionCounter
-				titleText = str(sectionCounter)+"_"+titleText
+				#titleText = str(sectionCounter)+"_"+titleText
 
 				# if this is the first chapter/section, make it the main "README" file
 				if isFirst:
@@ -105,6 +105,9 @@ def main():
 			textBuffer = []
 
 		if(lastlineHolder):
+			# convert md superscript ^...^ carrots to html <sup>...</sup> tags
+			lastlineHolder = re.sub(r"\^\[", "<sup>[", lastlineHolder)
+			lastlineHolder = re.sub(r"\)\^", ")</sup>", lastlineHolder)
 			textBuffer.append(lastlineHolder)
 		
 		lastlineHolder = line
@@ -120,6 +123,7 @@ def formatTitle(aLine):
 	# join the first four "words" of the title together with underscores
 	theTitle = "_".join(theTitleArray[0:3])
 	return theTitle   
+
 
 main()          
     
