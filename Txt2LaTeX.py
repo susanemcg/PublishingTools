@@ -50,6 +50,7 @@ def main():
 	
 	# this is a bit of a hack, but basically says:
 	# 'if the lines starts with a capital letter and ends w/a digit, it's a running header/footer'
+	# .....and: it breaks. 
 	line_ends_w_pagenum = re.compile("^[A-Z].*\d$")
 
 	# if you find a non-digit, non-dollar sign, followed by one or two digits and then a space or a paren, it's a footnote
@@ -64,7 +65,7 @@ def main():
 
 	sourceText = sourceStream.readlines()
 
-	outputFile = open(outputFileName+".tex", "w")
+	outputFile = open(outputFileName+"tex", "w")
 
 	previousLine = ""
 
