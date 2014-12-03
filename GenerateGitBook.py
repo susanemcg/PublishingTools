@@ -128,7 +128,7 @@ def fix_footnotes(textBuffer_array, footnote_prefix):
 		if footnote_format.match(line):
 			# instead of rewriting in a separate function, just get the match object and use it here
 			footnote_matchObj = footnote_format.match(line)
-			line = footnote_matchObj.group(1)+"<sup>["+footnote_matchObj.group(3)+"]("+footnote_prefix+"content/"+footnote_matchObj.group(5)+"/README.html)</sup>"
+			line = footnote_matchObj.group(1)+"<sup>["+footnote_matchObj.group(3)+"]("+footnote_prefix+footnote_matchObj.group(5)+"/README.html)</sup>"
 
 		new_text_buffer.append(line)
 
