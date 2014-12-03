@@ -3,6 +3,7 @@ import os
 import argparse
 
 
+
 def main():
 
 	# create an argument parser to take commandline arguments (e.g. target filename)
@@ -10,7 +11,6 @@ def main():
 	arg_parser.add_argument("filename")
 
 	args = arg_parser.parse_args()
-
 
 	chapterHeading = re.compile("={5}.*")
 	sectionHeading = re.compile("-{5}.*")
@@ -35,10 +35,9 @@ def main():
 
 	lastlineHolder = ""
 
-	currentChapter = ""
+	footnote_prepend = ""
 
-	chapterCounter = 1
-	sectionCounter = 1
+	currentChapter = ""
 
 	textBuffer = []
 
@@ -60,8 +59,6 @@ def main():
 			# if what's in the buffer starts a chapter, create a directory UNLESS it is the first
 			if chapterHeading.match(textBuffer[1]) and not isFirst:
 				# what's in the buffer is the start of a chapter; make a folder
-				# first, prepend the current chapterCounter, so we know what order the finished folders go in
-				#titleText = str(chapterCounter)+"_"+titleText
 
 				# create the directory (should update this to skip if exists)
 				if not os.path.exists(folderName+"/"+titleText):
@@ -73,22 +70,23 @@ def main():
 				# we use the raw title text from the buffer as the link text
 				summaryFile.write("* ["+textBuffer[0].rstrip()+"]("+titleText+"/README.md)\n")
 
-				#set currentChapter to titleText, so we know where to place sections (if they exist)
+				# set currentChapter to titleText, so we know where to place sections (if they exist)
 				currentChapter = titleText
 
-				#increment chapterCounter, reset the section counter
-				chapterCounter+=1;
-				sectionCounter = 1;
+				# set "footnote_prepend" to ../, because we only have to go up one directory to properly
+				# reference the endnotes folder
+				footnote_prepend = "../"
 
 			else:
 				# what's in the buffer is a section, make a file
-				# prepend the title with sectionCounter
-				#titleText = str(sectionCounter)+"_"+titleText
 
 				# if this is the first chapter/section, make it the main "README" file
 				if isFirst:
 					myOutput = open(folderName+"/README.md", "w")
 					isFirst = False
+
+					# we're at the top level, no footnote_prepend at all
+					footnote_prepend = ""
 				else:
 					myOutput = open(folderName+"/"+currentChapter+"/"+titleText+".md", "w")
 
@@ -96,18 +94,18 @@ def main():
 					# we use the raw title text from the buffer as the link text 
 					summaryFile.write("\t* ["+textBuffer[0].rstrip()+"]("+currentChapter+"/"+titleText+".md)\n")	
 
-				sectionCounter+=1;
+					# we're in a section, we'll need to go up two levels to reference endnotes
+					footnote_prepend = "../../"
 
-			# whatever file we're writing to, write to it & empty the buffer				
-			myOutput.writelines(textBuffer)
+			# whatever file we're writing to, write to it & empty the buffer
+			# we need to handle footnotes here, so that we know where we are in the file structure
+			revised_buffer = fix_footnotes(textBuffer, footnote_prepend)
+			myOutput.writelines(revised_buffer)
 			myOutput.close()
 			#empty the buffer
 			textBuffer = []
 
 		if(lastlineHolder):
-			# convert md superscript ^...^ carrots to html <sup>...</sup> tags
-			lastlineHolder = re.sub(r"\^\[", "<sup>[", lastlineHolder)
-			lastlineHolder = re.sub(r"\)\^", ")</sup>", lastlineHolder)
 			textBuffer.append(lastlineHolder)
 		
 		lastlineHolder = line
@@ -116,13 +114,33 @@ def main():
 	sourceStream.close()
 	summaryFile.close()
 
+def fix_footnotes(textBuffer_array, footnote_prefix):
+	# of course, now that I have to loop through the entire text buffer twice, I could completely
+	# rewrite the above...but not now
+	new_text_buffer = []
+
+	# so, I have to find and rewrite both the format and the innards of the footnote links
+	# Using a simple #endnotes doesn't work for GitBook file structure
+	footnote_format = re.compile("(.*)(\^\[)(\d+)(\]\(#)(.*)(\)\^)(.*)")
+
+	for line in textBuffer_array:
+
+		if footnote_format.match(line):
+			# instead of rewriting in a separate function, just get the match object and use it here
+			footnote_matchObj = footnote_format.match(line)
+			line = footnote_matchObj.group(1)+"<sup>["+footnote_matchObj.group(3)+"]("+footnote_prefix+"content/"+footnote_matchObj.group(5)+"/README.html)</sup>"
+
+		new_text_buffer.append(line)
+
+	return new_text_buffer
+
 
 def formatTitle(aLine):
 	# remove digits and punctuation from chapter/section title, make it lowercase and split it on spaces
 	theTitleArray = re.sub('[!@#$&.:1234567890,]', '',aLine).lower().split()
 	# join the first four "words" of the title together with underscores
 	theTitle = "_".join(theTitleArray[0:3])
-	return theTitle   
+	return theTitle  
 
 
 main()          
