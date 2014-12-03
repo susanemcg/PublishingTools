@@ -60,6 +60,7 @@ def main():
 	has_bullet = re.compile("•")
 
 
+
 	# create summary file, which will be used by Gitbook to generate the table of contents/links
 	sourceStream = open(targetFile)
 
@@ -79,6 +80,8 @@ def main():
 			edited_line = re.sub("\$", "\\$", edited_line)
 			# replace ellipsis with \ldots
 			edited_line = re.sub("…", "\ldots ", edited_line)
+			# escape % signs
+			edited_line = re.sub("%", "\%", edited_line)
 			
 			# write footnote markup
 			edited_line = footnote_pattern.sub(footnote_replace, edited_line)
