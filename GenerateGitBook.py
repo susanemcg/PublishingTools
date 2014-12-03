@@ -122,6 +122,7 @@ def fix_footnotes(textBuffer_array, footnote_prefix):
 	# so, I have to find and rewrite both the format and the innards of the footnote links
 	# Using a simple #endnotes doesn't work for GitBook file structure
 	footnote_format = re.compile("(.*)(\^\[)(\d+)(\]\(#)(.*)(\)\^)(.*)")
+	newline_remnant = re.compile("(.*)(\\\n)")
 
 	for line in textBuffer_array:
 
@@ -129,6 +130,9 @@ def fix_footnotes(textBuffer_array, footnote_prefix):
 			# instead of rewriting in a separate function, just get the match object and use it here
 			footnote_matchObj = footnote_format.match(line)
 			line = footnote_matchObj.group(1)+"<sup>["+footnote_matchObj.group(3)+"]("+footnote_prefix+footnote_matchObj.group(5)+"/README.html)</sup>"
+
+		# while we're at it, we might as well get real newlines into our footnote sections
+		line = re.sub(r"\\\n", "\n\n", line)
 
 		new_text_buffer.append(line)
 
