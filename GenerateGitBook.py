@@ -137,7 +137,7 @@ def fix_footnotes(textBuffer_array, footnote_prefix):
 
 def formatTitle(aLine):
 	# remove digits and punctuation from chapter/section title, make it lowercase and split it on spaces
-	theTitleArray = re.sub('[!@#$&.:1234567890,]', '',aLine).lower().split()
+	theTitleArray = re.sub('[\'!@#$&.:1234567890,]', '',aLine).lower().split()
 	# join the first four "words" of the title together with underscores
 	theTitle = "_".join(theTitleArray[0:3])
 	return theTitle  
