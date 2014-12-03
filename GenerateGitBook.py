@@ -95,7 +95,7 @@ def main():
 					summaryFile.write("\t* ["+textBuffer[0].rstrip()+"]("+currentChapter+"/"+titleText+".md)\n")	
 
 					# we're in a section, we'll need to go up two levels to reference endnotes
-					footnote_prepend = "../../"
+					footnote_prepend = "../"
 
 			# whatever file we're writing to, write to it & empty the buffer
 			# we need to handle footnotes here, so that we know where we are in the file structure
