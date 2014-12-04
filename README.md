@@ -17,6 +17,6 @@ Files will still need to have chapter/section heading tags and graphics manually
 
 ***Usage: python Txt2LaTeX.py "TextFileName.txt" "Random running hed" -endnote_loc "endnotes_1"***
 
-CreateRigthRail.py (Python 2.x): Run from the command line, accepts the name of an html file, and generates two files: _web.html which contains includes rewritten header anchors above each chapter heading to provide clean jumps when the page has a floating header, nad _rr.html, which is a link list to all chapters in the file. Good for porting to WP with a custom-HTML right widget for navigation through sections.
+GenerateWP.py (Python 2.x): Run from the command line, accepts the name of an html file, and generates two files: _web.html which contains includes rewritten header anchors above each chapter heading to provide clean jumps when the page has a floating header, nad _rr.html, which is a link list to all chapters in the file. Good for porting to WP with a custom-HTML right widget for navigation through sections.
 
-***Usage: python CreateRightRail.py "Pandoc_HTML_Output.html"***
+***Usage: python GenerateWP.py "Pandoc_HTML_Output.html"***
