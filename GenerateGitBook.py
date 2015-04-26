@@ -12,8 +12,11 @@ def main():
 
 	args = arg_parser.parse_args()
 
+	# right now this only matches chapter headings denoted by 5 equals signs and section headings by 5 dashes
+	# other formats for these could optionally be added, if other markdown sources are used
 	chapterHeading = re.compile("={5}.*")
 	sectionHeading = re.compile("-{5}.*")
+
 
 	# e.g. load the file passed in from the command line
 	targetFile = args.filename
@@ -50,7 +53,14 @@ def main():
 		if (chapterHeading.match(line) or sectionHeading.match(line) or line_num == num_lines-1) and textBuffer:
 
 			# whether we've got a chapter or a section, we need to create the "title" element
-			titleText = formatTitle(textBuffer[0])
+			wholeTitle = textBuffer[0].rstrip()
+			title_adds = re.compile("(.*?)({.*?})")
+			title_matchObj = title_adds.match(wholeTitle)
+			if(title_matchObj):
+				wholeTitle = title_matchObj.group(1)
+
+
+			titleText = formatTitle(wholeTitle)
 
 			# if we are indeed at the last line of the file, we need to push it to the buffer *before* processing 
 			if line_num == num_lines-1:
@@ -68,14 +78,15 @@ def main():
 
 				# write this folder info to summary file; note that link is relative to position of SUMMARY file, NOT python file
 				# we use the raw title text from the buffer as the link text
-				summaryFile.write("* ["+textBuffer[0].rstrip()+"]("+titleText+"/README.md)\n")
+
+				summaryFile.write("* ["+wholeTitle+"]("+titleText+"/README.md)\n")
 
 				# set currentChapter to titleText, so we know where to place sections (if they exist)
 				currentChapter = titleText
 
 				# set "footnote_prepend" to ../, because we only have to go up one directory to properly
 				# reference the endnotes folder
-				footnote_prepend = "../"
+				directory_prepend = "../"
 
 			else:
 				# what's in the buffer is a section, make a file
@@ -86,21 +97,23 @@ def main():
 					isFirst = False
 
 					# we're at the top level, no footnote_prepend at all
-					footnote_prepend = ""
+					directory_prepend = ""
 				else:
 					myOutput = open(folderName+"/"+currentChapter+"/"+titleText+".md", "w")
 
 					# add section path to summary file
 					# we use the raw title text from the buffer as the link text 
-					summaryFile.write("\t* ["+textBuffer[0].rstrip()+"]("+currentChapter+"/"+titleText+".md)\n")	
+					summaryFile.write("\t* ["+wholeTitle+"]("+currentChapter+"/"+titleText+".md)\n")	
 
-					# we're in a section, we'll need to go up two levels to reference endnotes
-					footnote_prepend = "../"
+					# we're in a section, we'll need to go up one level to reference endnotes
+					directory_prepend = "../"
 
 			# whatever file we're writing to, write to it & empty the buffer
 			# we need to handle footnotes here, so that we know where we are in the file structure
-			revised_buffer = fix_footnotes(textBuffer, footnote_prepend)
-			myOutput.writelines(revised_buffer)
+			revised_buffer = fix_footnotes(textBuffer, directory_prepend)
+			graphics_revised_buffer = fix_image_links(revised_buffer, directory_prepend)
+
+			myOutput.writelines(graphics_revised_buffer)
 			myOutput.close()
 			#empty the buffer
 			textBuffer = []
@@ -122,7 +135,7 @@ def fix_footnotes(textBuffer_array, footnote_prefix):
 	# so, I have to find and rewrite both the format and the innards of the footnote links
 	# Using a simple #endnotes doesn't work for GitBook file structure
 	footnote_format = re.compile("(.*)(\^\[)(\d+)(\]\(#)(.*)(\)\^)(.*)")
-	newline_remnant = re.compile("(.*)(\\\n)")
+	#newline_remnant = re.compile("(.*)(\\\n)")
 
 	for line in textBuffer_array:
 
@@ -138,12 +151,46 @@ def fix_footnotes(textBuffer_array, footnote_prefix):
 
 	return new_text_buffer
 
+def fix_image_links(textBuffer_array, graphics_prepend):
+	# placeholder for edited text; need to rewrite any image links to point to 
+	# top level of GitBook
+	new_text_buffer = []
+
+	# look for the structure of a graphics link
+	# "(![.*?])(\(graphics)(.*?\))(.*)"
+	graphics_link = re.compile("(!\[.*?\])(\(graphics)(.*?\))")
+	#newline_remnant = re.compile("(.*)(\\\n)")
+
+
+	for line in textBuffer_array:
+
+		if graphics_link.match(line):
+			# instead of rewriting in a separate function, just get the match object and use it here
+			#print(line)
+			graphics_matchObj = graphics_link.match(line)
+			line = graphics_matchObj.group(1)+"("+graphics_prepend+"graphics"+graphics_matchObj.group(3)
+			#print(line)
+			
+
+		# while we're at it, we might as well get real newlines into our footnote sections
+		#line = re.sub(r"\\\n", "\n\n", line)
+
+		new_text_buffer.append(line)
+
+	return new_text_buffer	
+
 
 def formatTitle(aLine):
 	# remove digits and punctuation from chapter/section title, make it lowercase and split it on spaces
+	#title_adds = re.compile("(.*?)({.*?})")
+	#title_matchObj = title_adds.match(aLine)
+	#if(title_matchObj):
+#		aLine = title_matchObj.group(1)
 	theTitleArray = re.sub('[\'!@#$&.:1234567890,]', '',aLine).lower().split()
+
 	# join the first four "words" of the title together with underscores
 	theTitle = "_".join(theTitleArray[0:3])
+
 	return theTitle  
 
 
