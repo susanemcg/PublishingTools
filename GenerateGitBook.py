@@ -1,14 +1,19 @@
 import re
 import os
 import argparse
+from roman import toRoman
 
-
+citation_counter = 1
 
 def main():
 
 	# create an argument parser to take commandline arguments (e.g. target filename)
 	arg_parser = argparse.ArgumentParser(description="Markdown file to be processed into Gitbook format")
 	arg_parser.add_argument("filename")
+	arg_parser.add_argument("-footnotes_title")
+	arg_parser.add_argument("-footnotes_roman")
+	arg_parser.add_argument("-citations_title")
+
 
 	args = arg_parser.parse_args()
 
@@ -17,6 +22,17 @@ def main():
 	chapterHeading = re.compile("={5}.*")
 	sectionHeading = re.compile("-{5}.*")
 
+	footnote_title = "endnotes"
+	if args.footnotes_title:
+		footnote_title = args.footnotes_title
+
+	citations_title = "citations"
+	if args.citations_title:
+		citations_title = args.citations_title
+
+	footnotes_roman = "False"
+	if args.footnotes_roman:
+		footnotes_roman = "True"
 
 	# e.g. load the file passed in from the command line
 	targetFile = args.filename
@@ -53,7 +69,10 @@ def main():
 		if (chapterHeading.match(line) or sectionHeading.match(line) or line_num == num_lines-1) and textBuffer:
 
 			# whether we've got a chapter or a section, we need to create the "title" element
-			wholeTitle = textBuffer[0].rstrip()
+			wholeTitle = textBuffer[0].rstrip() # remove trailing whitespace
+			
+			# this deals with the way LaTeX will output titles that have been 
+			# blocked from the TOC
 			title_adds = re.compile("(.*?)({.*?})")
 			title_matchObj = title_adds.match(wholeTitle)
 			if(title_matchObj):
@@ -110,10 +129,9 @@ def main():
 
 			# whatever file we're writing to, write to it & empty the buffer
 			# we need to handle footnotes here, so that we know where we are in the file structure
-			revised_buffer = fix_footnotes(textBuffer, directory_prepend)
-			graphics_revised_buffer = fix_image_links(revised_buffer, directory_prepend)
+			corrected_buffer = fix_media(textBuffer, directory_prepend, footnotes_roman, footnote_title, citations_title)
 
-			myOutput.writelines(graphics_revised_buffer)
+			myOutput.writelines(corrected_buffer)
 			myOutput.close()
 			#empty the buffer
 			textBuffer = []
@@ -127,66 +145,49 @@ def main():
 	sourceStream.close()
 	summaryFile.close()
 
-def fix_footnotes(textBuffer_array, footnote_prefix):
-	# of course, now that I have to loop through the entire text buffer twice, I could completely
-	# rewrite the above...but not now
-	new_text_buffer = []
+def fix_media(textBuffer, directory_prepend, footnotes_roman, footnote_title, citations_title):
 
-	# so, I have to find and rewrite both the format and the innards of the footnote links
-	# Using a simple #endnotes doesn't work for GitBook file structure
-	footnote_format = re.compile("(.*)(\^\[)(\d+)(\]\(#)(.*)(\)\^)(.*)")
-	#newline_remnant = re.compile("(.*)(\\\n)")
+	text_holder = []
 
-	for line in textBuffer_array:
+	footnote_format = re.compile("(.*)(\[\^)(\d+)(\])(.*)")
 
-		if footnote_format.match(line):
-			# instead of rewriting in a separate function, just get the match object and use it here
-			footnote_matchObj = footnote_format.match(line)
-			line = footnote_matchObj.group(1)+"<sup>["+footnote_matchObj.group(3)+"]("+footnote_prefix+"endnotes/README.html)</sup>"
+	citation_format = re.compile("(.*)(\[@ref)(\d+)(\])(.*)")
 
-		# while we're at it, we might as well get real newlines into our footnote sections
-		line = re.sub(r"\\\n", "\n\n", line)
-
-		new_text_buffer.append(line)
-
-	return new_text_buffer
-
-def fix_image_links(textBuffer_array, graphics_prepend):
-	# placeholder for edited text; need to rewrite any image links to point to 
-	# top level of GitBook
-	new_text_buffer = []
-
-	# look for the structure of a graphics link
-	# "(![.*?])(\(graphics)(.*?\))(.*)"
 	graphics_link = re.compile("(!\[.*?\])(\(graphics)(.*?\))")
-	#newline_remnant = re.compile("(.*)(\\\n)")
-
 
 	for line in textBuffer_array:
 
-		if graphics_link.match(line):
+	if footnote_format.match(line):
+		# instead of rewriting in a separate function, just get the match object and use it here
+		footnote_matchObj = footnote_format.match(line)
+		theNumber = footnote_matchObj.group(3)
+		if footnotes_roman == "True":
+			theNumber = toRoman(int(footnote_matchObj.group(3)))
+		line = footnote_matchObj.group(1)+"<sup>["+theNumber+"]("+directory_prepend+footnote_title+"/README.html)</sup>"
+
+	if citation_format.match(line):
 			# instead of rewriting in a separate function, just get the match object and use it here
-			#print(line)
-			graphics_matchObj = graphics_link.match(line)
-			line = graphics_matchObj.group(1)+"("+graphics_prepend+"graphics"+graphics_matchObj.group(3)
-			#print(line)
-			
+			# HACK: THIS EXPECTS @ REFERENCES TO CONTAIN THE CORRECT CITATION NUMBER (e.g. "ref27")
+			citation_matchObj = citation_format.match(line)
+			line = citation_matchObj.group(1)+"<sup>["+citation_matchObj.group(3)+"]("+directory_prepend+citations_title+"/README.html)</sup>"
 
-		# while we're at it, we might as well get real newlines into our footnote sections
-		#line = re.sub(r"\\\n", "\n\n", line)
+	if graphics_link.match(line):
+		# instead of rewriting in a separate function, just get the match object and use it here
+		#print(line)
+		graphics_matchObj = graphics_link.match(line)
+		line = graphics_matchObj.group(1)+"("+directory_prepend+"graphics"+graphics_matchObj.group(3)
 
-		new_text_buffer.append(line)
+	# while we're at it, we might as well get real newlines into our footnote sections
+	line = re.sub(r"\\\n", "\n\n", line)
 
-	return new_text_buffer	
+	text_holder.append(line)
+
+	return text_holder
 
 
 def formatTitle(aLine):
 	# remove digits and punctuation from chapter/section title, make it lowercase and split it on spaces
-	#title_adds = re.compile("(.*?)({.*?})")
-	#title_matchObj = title_adds.match(aLine)
-	#if(title_matchObj):
-#		aLine = title_matchObj.group(1)
-	theTitleArray = re.sub('[\'!@#$&.:1234567890,]', '',aLine).lower().split()
+	theTitleArray = re.sub('[\'*!@#$&.:1234567890,]', '',aLine).lower().split()
 
 	# join the first four "words" of the title together with underscores
 	theTitle = "_".join(theTitleArray[0:3])
