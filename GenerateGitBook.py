@@ -145,7 +145,9 @@ def main():
 	sourceStream.close()
 	summaryFile.close()
 
-def fix_media(textBuffer, directory_prepend, footnotes_roman, footnote_title, citations_title):
+
+
+def fix_media(textBufferArray, directory_prepend, footnotes_roman, footnote_title, citations_title):
 
 	text_holder = []
 
@@ -155,32 +157,32 @@ def fix_media(textBuffer, directory_prepend, footnotes_roman, footnote_title, ci
 
 	graphics_link = re.compile("(!\[.*?\])(\(graphics)(.*?\))")
 
-	for line in textBuffer_array:
+	for line in textBufferArray:
 
-	if footnote_format.match(line):
-		# instead of rewriting in a separate function, just get the match object and use it here
-		footnote_matchObj = footnote_format.match(line)
-		theNumber = footnote_matchObj.group(3)
-		if footnotes_roman == "True":
-			theNumber = toRoman(int(footnote_matchObj.group(3)))
-		line = footnote_matchObj.group(1)+"<sup>["+theNumber+"]("+directory_prepend+footnote_title+"/README.html)</sup>"
-
-	if citation_format.match(line):
+		if footnote_format.match(line):
 			# instead of rewriting in a separate function, just get the match object and use it here
-			# HACK: THIS EXPECTS @ REFERENCES TO CONTAIN THE CORRECT CITATION NUMBER (e.g. "ref27")
-			citation_matchObj = citation_format.match(line)
-			line = citation_matchObj.group(1)+"<sup>["+citation_matchObj.group(3)+"]("+directory_prepend+citations_title+"/README.html)</sup>"
+			footnote_matchObj = footnote_format.match(line)
+			theNumber = footnote_matchObj.group(3)
+			if footnotes_roman == "True":
+				theNumber = toRoman(int(footnote_matchObj.group(3)))
+			line = footnote_matchObj.group(1)+"<sup>["+theNumber+"]("+directory_prepend+footnote_title+"/README.html)</sup>"
 
-	if graphics_link.match(line):
-		# instead of rewriting in a separate function, just get the match object and use it here
-		#print(line)
-		graphics_matchObj = graphics_link.match(line)
-		line = graphics_matchObj.group(1)+"("+directory_prepend+"graphics"+graphics_matchObj.group(3)
+		if citation_format.match(line):
+				# instead of rewriting in a separate function, just get the match object and use it here
+				# HACK: THIS EXPECTS @ REFERENCES TO CONTAIN THE CORRECT CITATION NUMBER (e.g. "ref27")
+				citation_matchObj = citation_format.match(line)
+				line = citation_matchObj.group(1)+"<sup>["+citation_matchObj.group(3)+"]("+directory_prepend+citations_title+"/README.html)</sup>"
 
-	# while we're at it, we might as well get real newlines into our footnote sections
-	line = re.sub(r"\\\n", "\n\n", line)
+		if graphics_link.match(line):
+			# instead of rewriting in a separate function, just get the match object and use it here
+			#print(line)
+			graphics_matchObj = graphics_link.match(line)
+			line = graphics_matchObj.group(1)+"("+directory_prepend+"graphics"+graphics_matchObj.group(3)
 
-	text_holder.append(line)
+		# while we're at it, we might as well get real newlines into our footnote sections
+		line = re.sub(r"\\\n", "\n\n", line)
+
+		text_holder.append(line)
 
 	return text_holder
 
