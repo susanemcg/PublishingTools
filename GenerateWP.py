@@ -16,14 +16,11 @@ def main():
 
 	# e.g. load the file passed in from the command line
 	targetFile = args.filename
-	print "hi"
 
 	# strip the file extension from the target file to create target folder
 	outputFileName = targetFile[:-5]+"_rr.html"
 
 	revisedOutputFile = targetFile[:-5]+"_web.html"
-
-	print outputFileName
 
 	sourceStream = open(targetFile, "rU")
 	sourceText = sourceStream.readlines()
