@@ -66,28 +66,43 @@ def main():
 	bibFile = open(newFileName+"bib", "w")
 
 	sourceStream = open(targetFile, "rU")
-	sourceText = csv.DictReader(sourceStream, delimiter='\t',fieldnames=["shortcode","type","title","author","journal","org","publisher","address","year","vol","number","URL","access_date","pgs"])
+	sourceText = csv.DictReader(sourceStream, delimiter='\t',fieldnames=["shortcode","type","title","author","journal","org","publisher","address","year","vol","number","URL","access_date","pgs", "chapter_title", "eds"])
 
 	for i, row in enumerate(sourceText):
-		if i > 0 and row['type'] != "":
-			mainBibEntry = "@"+row['type']+"{"+row['shortcode']+",\n\t"
-			mainBibEntry += "title={{"+row['title']+"}},\n\t"
+		entry_type = row['type'].lower()
+		if entry_type == "bookchapter":
+			entry_type = "incollection"
+
+		if i > 0 and entry_type != "":
+			mainBibEntry = "@"+entry_type+"{"+row['shortcode']+",\n\t"
 			# if the type is "online" then we should add an organization and a url
-			if row['type'].lower() == 'online':
+			if entry_type == 'online':
+				mainBibEntry += "title={{"+row['title']+"}},\n\t"
 				mainBibEntry += "organization={"+row['org']+"},\n\t"
 			# if it's an "article" we're going to default to magazine/newspaper subtype, and manually correct from there
-			if row['type'].lower() == "article":
+			if entry_type == "article":
+				mainBibEntry += "title={{"+row['title']+"}},\n\t"
 				mainBibEntry += "journal={"+row['journal']+"},\n\t"
-				mainBibEntry += "entrysubtype = {magazine},\n\t"
-				mainBibEntry += "vol = {"+row['vol']+"},\n\t"
-				mainBibEntry += "number = {"+row['number']+"},\n\t"
-				mainBibEntry += "pages = {"+row['pgs']+"},\n\t"
+				if row['vol'] != "":
+					mainBibEntry += "entrysubtype = {magazine},\n\t"
+				else:
+					mainBibEntry += "vol = {"+row['vol']+"},\n\t"
+					mainBibEntry += "number = {"+row['number']+"},\n\t"
+					mainBibEntry += "pages = {"+row['pgs']+"},\n\t"
+			if entry_type == "incollection":
+				mainBibEntry += "title = {{"+row['chapter_title']+"}},\n\t"
+				mainBibEntry += "editor = {"+row['eds']+"},\n\t"
+				mainBibEntry += "booktitle ={"+row['title']+"},\n\t"
+			if entry_type == "inproceedings":
+				mainBibEntry += "title={{"+row['title']+"}},\n\t"
+				mainBibEntry += "booktitle ={"+row['org']+"},\n\t"
+
 			# for all entries, add "year", url, and date accessed and author, just in case
 			mainBibEntry += "author={"+row['author']+"},\n\t"	
 			
 			# dealing with bad date formats
 			theDate = row['year']
-			print theDate
+			# print theDate
 			if bad_date.match(theDate):
 				date_obj = bad_date.match(theDate)
 				theDate	= fix_date(date_obj)
