@@ -72,6 +72,8 @@ def main():
 		entry_type = row['type'].lower()
 		if entry_type == "bookchapter":
 			entry_type = "incollection"
+		if entry_type == "journal":
+			entry_type = "article"
 
 		if i > 0 and entry_type != "":
 			mainBibEntry = "@"+entry_type+"{"+row['shortcode']+",\n\t"
