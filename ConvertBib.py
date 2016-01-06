@@ -85,7 +85,7 @@ def main():
 			if entry_type == "article":
 				mainBibEntry += "title={{"+row['title']+"}},\n\t"
 				mainBibEntry += "journal={"+row['journal']+"},\n\t"
-				if row['vol'] != "":
+				if row['vol'] == "":
 					mainBibEntry += "entrysubtype = {magazine},\n\t"
 				else:
 					mainBibEntry += "vol = {"+row['vol']+"},\n\t"
@@ -95,9 +95,17 @@ def main():
 				mainBibEntry += "title = {{"+row['chapter_title']+"}},\n\t"
 				mainBibEntry += "editor = {"+row['eds']+"},\n\t"
 				mainBibEntry += "booktitle ={"+row['title']+"},\n\t"
+				mainBibEntry += "publisher={{"+row['publisher']+"}},\n\t"
+				mainBibEntry += "address={{"+row['address']+"}},\n\t"
+				mainBibEntry += "pages = {"+row['pgs']+"},\n\t"
 			if entry_type == "inproceedings":
 				mainBibEntry += "title={{"+row['title']+"}},\n\t"
 				mainBibEntry += "booktitle ={"+row['org']+"},\n\t"
+			if entry_type == "book":
+				mainBibEntry += "title={{"+row['title']+"}},\n\t"
+				mainBibEntry += "publisher={{"+row['publisher']+"}},\n\t"
+				mainBibEntry += "address={{"+row['address']+"}},\n\t"
+				mainBibEntry += "pages = {"+row['pgs']+"},\n\t"
 
 			# for all entries, add "year", url, and date accessed and author, just in case
 			mainBibEntry += "author={"+row['author']+"},\n\t"	
