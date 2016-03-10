@@ -101,6 +101,7 @@ def main():
 			if entry_type == "inproceedings":
 				mainBibEntry += "title={{"+row['title']+"}},\n\t"
 				mainBibEntry += "booktitle ={"+row['org']+"},\n\t"
+				mainBibEntry += "pages = {"+row['pgs']+"},\n\t"
 			if entry_type == "book":
 				mainBibEntry += "title={{"+row['title']+"}},\n\t"
 				mainBibEntry += "publisher={{"+row['publisher']+"}},\n\t"
