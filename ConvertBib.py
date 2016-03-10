@@ -104,8 +104,10 @@ def main():
 			if entry_type == "book":
 				mainBibEntry += "title={{"+row['title']+"}},\n\t"
 				mainBibEntry += "publisher={{"+row['publisher']+"}},\n\t"
-				mainBibEntry += "address={{"+row['address']+"}},\n\t"
-				mainBibEntry += "pages = {"+row['pgs']+"},\n\t"
+				if row['address'] != '':
+					mainBibEntry += "address={{"+row['address']+"}},\n\t"
+				if row['pgs'] != '':	
+					mainBibEntry += "pages = {"+row['pgs']+"},\n\t"
 
 			# for all entries, add "year", url, and date accessed and author, just in case
 			mainBibEntry += "author={"+row['author']+"},\n\t"	
