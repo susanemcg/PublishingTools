@@ -168,6 +168,9 @@ def replace_bold(matchobj):
 def replace_italics(matchobj):
 	return "<em>"+matchobj.group(2)+"</em>"
 
+def format_captions(matchobj):
+	return "<span style='font-size:12px;'><em>"+matchobj.group(2)+"</em></span>"
+
 def replace_links(matchobj):
 	# 2 is text, 5 is link
 	#print matchobj.group(2)
@@ -207,7 +210,9 @@ def remove_breaks(the_buffer):
 
 	link_fix = re.sub("(\[)(.*?)(\])(\()(.*?)(\))", replace_links, new_tester)
 
-	return link_fix
+	caption_edit = re.sub("(<span>)(.{4,}?)(<\/span>)", format_captions, link_fix)
+
+	return caption_edit
 
 
 
@@ -228,18 +233,23 @@ def fix_media(textBufferArray, directory_prepend, footnotes_roman, footnote_titl
 
 		if footnote_format.match(line):
 			# instead of rewriting in a separate function, just get the match object and use it here
-			footnote_matchObj = footnote_format.match(line)
-			theNumber = footnote_matchObj.group(3)
-			if footnotes_roman == "True":
-				theNumber = toRoman(int(footnote_matchObj.group(3)))
-			line = footnote_matchObj.group(1)+"<sup>["+theNumber+"]("+directory_prepend+footnote_title+"/README.html)</sup>"
+			footnote_iter = footnote_format.finditer(line)
+			foot_holder = []
+			for match in footnote_iter:
+				theNumber = match.group(3)
+				if footnotes_roman == "True":
+					theNumber = toRoman(int(match.group(3)))
+				line_frag = match.group(1)+"<sup>["+theNumber+"]("+directory_prepend+footnote_title+"/README.html)</sup>"
+				foot_holder.append(line_frag)
+			foot_holder.append(line[match.end():])
+			line = "".join(foot_holder)
 
 		if citation_format.match(line):
 			# instead of rewriting in a separate function, just get the match object and use it here
 			citation_iter = citation_format.finditer(line)
 			new_holder = []
 			for match in citation_iter:
-				print match.group(1)
+				#print match.group(1)
 				line_frag = match.group(1)+"<sup><a href="+directory_prepend+citations_title+"/index.html>"+str(citation_counter)+"</a></sup>"
 				new_holder.append(line_frag)
 				global citation_counter
@@ -252,6 +262,8 @@ def fix_media(textBufferArray, directory_prepend, footnotes_roman, footnote_titl
 			#print(line)
 			graphics_matchObj = graphics_link.match(line)
 			line = graphics_matchObj.group(1)+"("+directory_prepend+"graphics"+graphics_matchObj.group(3)
+
+
 
 		# while we're at it, we might as well get real newlines into our footnote sections
 		line = re.sub(r"\\\n", "\n\n", line)
@@ -266,7 +278,7 @@ def formatTitle(aLine):
 	theTitleArray = re.sub('[\'*!@#$&.:1234567890,?/]', '',aLine).lower().split()
 
 	# join the first four "words" of the title together with underscores
-	theTitle = "_".join(theTitleArray[0:3])
+	theTitle = "_".join(theTitleArray[0:4])
 
 	return theTitle  
 
