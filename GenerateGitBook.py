@@ -223,7 +223,8 @@ def fix_media(textBufferArray, directory_prepend, footnotes_roman, footnote_titl
 
 	text_holder = []
 
-	footnote_format = re.compile("(.*)(\[\^)(\d+)(\])(.*)")
+	# try not writing an overly-greedy regex if you don't want to lose text!
+	footnote_format = re.compile("(.*)(\[\^)(\d+)(\])")
 
 	citation_format = re.compile("(.*)(\[@)(.+?)(\])")
 
@@ -239,8 +240,8 @@ def fix_media(textBufferArray, directory_prepend, footnotes_roman, footnote_titl
 				theNumber = match.group(3)
 				if footnotes_roman == "True":
 					theNumber = toRoman(int(match.group(3)))
-				line_frag = match.group(1)+"<sup>["+theNumber+"]("+directory_prepend+footnote_title+"/README.html)</sup>"
-				foot_holder.append(line_frag)
+				foot_frag = match.group(1)+"<sup>["+theNumber+"]("+directory_prepend+footnote_title+"/README.html)</sup>"
+				foot_holder.append(foot_frag)
 			foot_holder.append(line[match.end():])
 			line = "".join(foot_holder)
 
